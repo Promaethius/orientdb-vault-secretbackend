@@ -19,7 +19,7 @@ import (
 )
 
 // orientdbConnectionProducer implements ConnectionProducer and provides an
-// interface for cassandra databases to make connections.
+// interface for orientdb databases to make http based connections.
 type orientdbConnectionProducer struct {
 	Hosts             string      `json:"hosts" structs:"hosts" mapstructure:"hosts"`
 	Port              int         `json:"port" structs:"port" mapstructure:"port"`
