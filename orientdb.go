@@ -23,9 +23,7 @@ var _ dbplugin.Database = &OrientDB{}
 
 // OrientDB is an implementation of Database interface
 type OrientDB struct {
-	// Drop in required for connutil
-	*connutil.SQLConnectionProducer
-	// Credsutil package can be left intact
+	*orientdbConnectionProducer
 	credsutil.CredentialsProducer
 }
 
@@ -38,8 +36,8 @@ func New() (interface{}, error) {
 }
 
 func new() *OrientDB {
-	connProducer := &connutil.SQLConnectionProducer{}
-
+	connProducer := &orientdbConnectionProducer{}
+	
 	credsProducer := &credsutil.SQLCredentialsProducer{
 		DisplayNameLen: 20,
 		RoleNameLen:    20,
