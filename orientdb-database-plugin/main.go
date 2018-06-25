@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/hashicorp/vault/helper/pluginutil"
-	"github.com/promaethius/orientdb-vault-secretbackend"
+	"github.com/Promaethius/orientdb-vault-secretbackend"
 )
 
 func main() {
