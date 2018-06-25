@@ -8,25 +8,24 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/builtin/logical/database/dbplugin"
 	"github.com/hashicorp/vault/helper/dbtxn"
 	"github.com/hashicorp/vault/helper/strutil"
 	"github.com/hashicorp/vault/plugins"
-	"github.com/hashicorp/vault/plugins/helper/database/connutil"
+	"github.com/Promaethius/orientdb-vault-secretbackend"
 	"github.com/hashicorp/vault/plugins/helper/database/credsutil"
 	"github.com/hashicorp/vault/plugins/helper/database/dbutil"
 )
 
-const msSQLTypeName = "mssql"
+var _ dbplugin.Database = &OrientDB{}
 
-var _ dbplugin.Database = &MSSQL{}
-
-// MSSQL is an implementation of Database interface
-type MSSQL struct {
+// OrientDB is an implementation of Database interface
+type OrientDB struct {
+	// Drop in required for connutil
 	*connutil.SQLConnectionProducer
+	// Credsutil package can be left intact
 	credsutil.CredentialsProducer
 }
 
@@ -38,9 +37,8 @@ func New() (interface{}, error) {
 	return dbType, nil
 }
 
-func new() *MSSQL {
+func new() *OrientDB {
 	connProducer := &connutil.SQLConnectionProducer{}
-	connProducer.Type = msSQLTypeName
 
 	credsProducer := &credsutil.SQLCredentialsProducer{
 		DisplayNameLen: 20,
@@ -49,13 +47,13 @@ func new() *MSSQL {
 		Separator:      "-",
 	}
 
-	return &MSSQL{
+	return &OrientDB{
 		SQLConnectionProducer: connProducer,
 		CredentialsProducer:   credsProducer,
 	}
 }
 
-// Run instantiates a MSSQL object, and runs the RPC server for the plugin
+// Run instantiates a OrientDB object, and runs the RPC server for the plugin
 func Run(apiTLSConfig *api.TLSConfig) error {
 	dbType, err := New()
 	if err != nil {
@@ -68,11 +66,11 @@ func Run(apiTLSConfig *api.TLSConfig) error {
 }
 
 // Type returns the TypeName for this backend
-func (m *MSSQL) Type() (string, error) {
-	return msSQLTypeName, nil
+func (m *OrientDB) Type() (string, error) {
+	return OrientDBTypeName, nil
 }
 
-func (m *MSSQL) getConnection(ctx context.Context) (*sql.DB, error) {
+func (m *OrientDB) getConnection(ctx context.Context) (*sql.DB, error) {
 	db, err := m.Connection(ctx)
 	if err != nil {
 		return nil, err
@@ -81,9 +79,9 @@ func (m *MSSQL) getConnection(ctx context.Context) (*sql.DB, error) {
 	return db.(*sql.DB), nil
 }
 
-// CreateUser generates the username/password on the underlying MSSQL secret backend as instructed by
+// CreateUser generates the username/password on the underlying OrientDB secret backend as instructed by
 // the CreationStatement provided.
-func (m *MSSQL) CreateUser(ctx context.Context, statements dbplugin.Statements, usernameConfig dbplugin.UsernameConfig, expiration time.Time) (username string, password string, err error) {
+func (m *OrientDB) CreateUser(ctx context.Context, statements dbplugin.Statements, usernameConfig dbplugin.UsernameConfig, expiration time.Time) (username string, password string, err error) {
 	// Grab the lock
 	m.Lock()
 	defer m.Unlock()
@@ -150,8 +148,8 @@ func (m *MSSQL) CreateUser(ctx context.Context, statements dbplugin.Statements, 
 	return username, password, nil
 }
 
-// RenewUser is not supported on MSSQL, so this is a no-op.
-func (m *MSSQL) RenewUser(ctx context.Context, statements dbplugin.Statements, username string, expiration time.Time) error {
+// RenewUser is not supported on OrientDB, so this is a no-op.
+func (m *OrientDB) RenewUser(ctx context.Context, statements dbplugin.Statements, username string, expiration time.Time) error {
 	// NOOP
 	return nil
 }
@@ -159,7 +157,7 @@ func (m *MSSQL) RenewUser(ctx context.Context, statements dbplugin.Statements, u
 // RevokeUser attempts to drop the specified user. It will first attempt to disable login,
 // then kill pending connections from that user, and finally drop the user and login from the
 // database instance.
-func (m *MSSQL) RevokeUser(ctx context.Context, statements dbplugin.Statements, username string) error {
+func (m *OrientDB) RevokeUser(ctx context.Context, statements dbplugin.Statements, username string) error {
 	statements = dbutil.StatementCompatibilityHelper(statements)
 
 	if len(statements.Revocation) == 0 {
@@ -204,7 +202,7 @@ func (m *MSSQL) RevokeUser(ctx context.Context, statements dbplugin.Statements, 
 	return nil
 }
 
-func (m *MSSQL) revokeUserDefault(ctx context.Context, username string) error {
+func (m *OrientDB) revokeUserDefault(ctx context.Context, username string) error {
 	// Get connection
 	db, err := m.getConnection(ctx)
 	if err != nil {
@@ -305,7 +303,7 @@ func (m *MSSQL) revokeUserDefault(ctx context.Context, username string) error {
 	return nil
 }
 
-func (m *MSSQL) RotateRootCredentials(ctx context.Context, statements []string) (map[string]interface{}, error) {
+func (m *OrientDB) RotateRootCredentials(ctx context.Context, statements []string) (map[string]interface{}, error) {
 	m.Lock()
 	defer m.Unlock()
 
@@ -369,7 +367,7 @@ const dropUserSQL = `
 USE [%s]
 IF EXISTS
   (SELECT name
-   FROM sys.database_principals
+   FROM OUser
    WHERE name = N'%s')
 BEGIN
   DROP USER [%s]
