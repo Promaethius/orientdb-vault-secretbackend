@@ -69,7 +69,7 @@ func (c *OrientDB) Init(ctx context.Context, config map[string]interface{}, veri
 	orientdbClient := &http.Client{Transport: tr}
 }
 
-// Type returns the name of this plugin
+// Type returns the name of this plugin in a string
 func (c *OrientDB) Type() (string, error) {
 	return "OrientDB", nil
 }
