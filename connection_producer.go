@@ -10,7 +10,6 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 
-	"github.com/go-resty/resty"
 	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/vault/helper/certutil"
 	"github.com/hashicorp/vault/helper/parseutil"
